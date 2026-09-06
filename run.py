@@ -13,38 +13,54 @@ def main():
     parser = argparse.ArgumentParser(
         description="Standalone Instagram Reel publisher"
     )
+
     sub = parser.add_subparsers(dest="command", required=True)
 
-    for command in ("create", "publish"):
-        p = sub.add_parser(command)
-        p.add_argument("--job-id", required=True)
-        p.add_argument("--caption", default="")
+    create = sub.add_parser(
+        "create",
+        help="Create the 24-second Reel MP4 only; do not publish.",
+    )
+    create.add_argument("--input-dir", required=True)
 
-    status = sub.add_parser("status")
+    publish = sub.add_parser(
+        "publish",
+        help="Create/upload/publish the Reel.",
+    )
+    publish.add_argument("--input-dir", required=True)
+    publish.add_argument("--caption", required=True)
+    publish.add_argument(
+        "--publish",
+        action="store_true",
+        help="Required confirmation that the Reel may be published.",
+    )
+
+    status = sub.add_parser("status", help="Show local publication status.")
     status.add_argument("--job-id", required=True)
 
     args = parser.parse_args()
-
-    if args.command == "status":
-        path = Path("/app/data/publications.json")
-        if not path.exists():
-            print("No publication ledger yet.")
-            return
-        data = json.loads(path.read_text())
-        record = data.get(args.job_id)
-        print(json.dumps(record, indent=2) if record else f"No record for {args.job_id}")
-        return
 
     config = Config()
     publisher = ReelPublisher(config)
 
     try:
         if args.command == "create":
-            result = publisher.create(args.job_id)
-        else:
-            result = publisher.publish(args.job_id, args.caption)
+            result = publisher.create(args.input_dir)
 
-        print(json.dumps(result, indent=2))
+        elif args.command == "publish":
+            if not args.publish:
+                raise RuntimeError(
+                    "Publishing requires the --publish flag."
+                )
+            result = publisher.publish(
+                args.input_dir,
+                args.caption,
+            )
+
+        else:
+            result = publisher.status(args.job_id)
+
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
     except Exception as exc:
         print(f"\nERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)
