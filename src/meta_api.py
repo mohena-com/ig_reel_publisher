@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+
 import requests
 
 
@@ -15,14 +16,27 @@ class InstagramAccount:
 
 class MetaAPI:
     def __init__(self, api_version: str):
-        version = api_version if api_version.startswith("v") else "v" + api_version
-        self.base = f"https://graph.facebook.com/{version}"
-        self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "pojo-instagram-reel-publisher/1.0"
-        })
+        version = api_version
+        if not version.startswith("v"):
+            version = "v" + version
 
-    def _request(self, method, path, *, params=None, data=None):
+        self.base = f"https://graph.facebook.com/{version}"
+
+        self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "User-Agent": "ig-reel-publisher/1.0",
+            }
+        )
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params=None,
+        data=None,
+    ):
         response = self.session.request(
             method,
             self.base + path,
@@ -43,12 +57,19 @@ class MetaAPI:
 
         return payload
 
-    def discover_page(self, user_access_token: str, page_id: str):
+    def discover_page(
+        self,
+        user_access_token: str,
+        page_id: str,
+    ):
         return self._request(
             "GET",
             f"/{page_id}",
             params={
-                "fields": "id,name,access_token,instagram_business_account",
+                "fields": (
+                    "id,name,access_token,"
+                    "instagram_business_account"
+                ),
                 "access_token": user_access_token,
             },
         )
@@ -60,27 +81,41 @@ class MetaAPI:
         page_id: str,
     ) -> InstagramAccount:
 
-        page = self.discover_page(user_access_token, page_id)
+        page = self.discover_page(
+            user_access_token,
+            page_id,
+        )
 
         if page.get("id") != page_id:
             raise RuntimeError(
-                f"Meta returned unexpected Page ID: {page.get('id')}"
+                f"Meta returned unexpected Page ID: "
+                f"{page.get('id')}"
             )
 
         actual_name = page.get("name", "")
 
-        if page_name and actual_name.strip().lower() != page_name.strip().lower():
+        if (
+            page_name
+            and actual_name.strip().lower()
+            != page_name.strip().lower()
+        ):
             raise RuntimeError(
-                f"Configured Page name '{page_name}' does not match "
-                f"Meta Page name '{actual_name}'."
+                f"Configured Page name '{page_name}' does not "
+                f"match Meta Page name '{actual_name}'."
             )
 
         page_access_token = page.get("access_token")
-        if not page_access_token:
-            raise RuntimeError("Meta did not return a Page Access Token.")
 
-        ig = page.get("instagram_business_account") or {}
-        ig_user_id = ig.get("id")
+        if not page_access_token:
+            raise RuntimeError(
+                "Meta did not return a Page Access Token."
+            )
+
+        instagram = page.get(
+            "instagram_business_account"
+        ) or {}
+
+        ig_user_id = instagram.get("id")
 
         if not ig_user_id:
             raise RuntimeError(
@@ -113,7 +148,11 @@ class MetaAPI:
             },
         )
 
-    def container_status(self, container_id: str, page_access_token: str):
+    def container_status(
+        self,
+        container_id: str,
+        page_access_token: str,
+    ):
         return self._request(
             "GET",
             f"/{container_id}",
@@ -139,7 +178,9 @@ class MetaAPI:
                 page_access_token,
             )
 
-            code = str(last.get("status_code", "")).upper()
+            code = str(
+                last.get("status_code", "")
+            ).upper()
 
             if code in {"FINISHED", "PUBLISHED"}:
                 return last
@@ -152,7 +193,7 @@ class MetaAPI:
             time.sleep(poll_seconds)
 
         raise TimeoutError(
-            f"Instagram Reel did not become ready within "
+            "Instagram Reel did not become ready within "
             f"{timeout_seconds}s. Last status: {last}"
         )
 

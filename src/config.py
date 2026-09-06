@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 import os
+
 from dotenv import load_dotenv
+
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
@@ -18,16 +22,31 @@ class Config:
     cloudinary_api_key: str = os.getenv("CLOUDINARY_API_KEY", "")
     cloudinary_api_secret: str = os.getenv("CLOUDINARY_API_SECRET", "")
     cloudinary_folder: str = os.getenv(
-        "CLOUDINARY_FOLDER", "shaktidootam/instagram_reels"
+        "CLOUDINARY_FOLDER",
+        "shaktidootam/instagram_reels",
     )
 
     data_dir: Path = ROOT / "data"
 
-    def validate(self):
+    def validate_meta(self):
         missing = []
+
+        if not self.meta_user_access_token:
+            missing.append("META_USER_ACCESS_TOKEN")
+
+        if not self.meta_page_id:
+            missing.append("META_PAGE_ID")
+
+        if missing:
+            raise RuntimeError(
+                "Missing Meta settings in .env: "
+                + ", ".join(missing)
+            )
+
+    def validate_cloudinary(self):
+        missing = []
+
         for name, value in [
-            ("META_USER_ACCESS_TOKEN", self.meta_user_access_token),
-            ("META_PAGE_ID", self.meta_page_id),
             ("CLOUDINARY_CLOUD_NAME", self.cloudinary_cloud_name),
             ("CLOUDINARY_API_KEY", self.cloudinary_api_key),
             ("CLOUDINARY_API_SECRET", self.cloudinary_api_secret),
@@ -37,8 +56,13 @@ class Config:
 
         if missing:
             raise RuntimeError(
-                "Missing settings in .env: " + ", ".join(missing)
+                "Missing Cloudinary settings in .env: "
+                + ", ".join(missing)
             )
+
+    def validate(self):
+        self.validate_meta()
+        self.validate_cloudinary()
 
     @property
     def graph_base(self):

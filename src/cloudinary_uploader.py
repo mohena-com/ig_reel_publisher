@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
+
 import cloudinary
 import cloudinary.uploader
 
@@ -19,7 +22,11 @@ class CloudinaryUploader:
         )
         self.folder = folder
 
-    def upload_video(self, path: Path, public_id: str):
+    def upload_video(
+        self,
+        path: Path,
+        public_id: str,
+    ):
         return cloudinary.uploader.upload(
             str(path),
             resource_type="video",
