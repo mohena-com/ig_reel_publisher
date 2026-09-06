@@ -1,0 +1,11 @@
+services:
+  reel-publisher:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      # Shared job storage. Adjust if your shared storage is elsewhere.
+      - ../output_carousel:/data/jobs
+      - ./data:/app/data
+      - ./output:/data/output
+    working_dir: /app
