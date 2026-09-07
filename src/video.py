@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import random
 import shutil
 import subprocess
 from pathlib import Path
@@ -18,6 +19,29 @@ def natural_key(path: Path):
         int(part) if part.isdigit() else part.lower()
         for part in re.split(r"(\d+)", path.name)
     ]
+
+
+def choose_random_music(music_dir: Path) -> Path:
+    if not music_dir.is_dir():
+        raise RuntimeError(
+            f"Music directory does not exist: {music_dir}"
+        )
+
+    tracks = sorted(
+        [
+            path
+            for path in music_dir.iterdir()
+            if path.is_file() and path.suffix.lower() == ".mp3"
+        ],
+        key=natural_key,
+    )
+
+    if not tracks:
+        raise RuntimeError(
+            f"No MP3 files found in music directory: {music_dir}"
+        )
+
+    return random.choice(tracks)
 
 
 def find_slides(input_dir: Path) -> list[Path]:

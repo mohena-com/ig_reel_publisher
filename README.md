@@ -12,7 +12,7 @@ This version does NOT use Docker.
 - 1080x1920 (9:16)
 - 30 FPS
 - H.264 MP4
-- Optional background music
+- Random background music from `../data/music/`
 - Original slide files are never modified
 
 ## Input
@@ -69,12 +69,12 @@ This is the recommended first test:
 
 ```bash
 ./run.sh create \
-  --input-dir "../output_carousel/25_Indian_Overseas_Bank_IOB_Security_Guard_Recruitment_2026_Apply_Online_2026-08-29" \
-  --music "data/music/your-licensed-track.mp3"
+  --input-dir "../output_carousel/25_Indian_Overseas_Bank_IOB_Security_Guard_Recruitment_2026_Apply_Online_2026-08-29"
 ```
 
-The `--music` option is optional. FFmpeg loops or trims the supplied track to
-the 24-second Reel and fades it out during the final second. Use music whose
+When `--music` is omitted, the application randomly selects an `.mp3` file
+from `../data/music/`. FFmpeg loops or trims the selected track to the
+24-second Reel and fades it out during the final second. Use music whose
 license explicitly permits social media use, such as a track downloaded from
 the YouTube Audio Library, Pixabay Music, or another provider whose terms you
 have checked. The application does not download music or verify licenses.

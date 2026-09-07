@@ -7,7 +7,10 @@ from .cloudinary_uploader import CloudinaryUploader
 from .config import Config
 from .ledger import PublicationLedger
 from .meta_api import MetaAPI
-from .video import create_reel, find_slides
+from .video import choose_random_music, create_reel, find_slides
+
+
+MUSIC_DIR = Path(__file__).resolve().parents[2] / "data" / "music"
 
 
 class ReelPublisher:
@@ -37,8 +40,10 @@ class ReelPublisher:
         music_path = (
             Path(music_path_string).expanduser().resolve()
             if music_path_string
-            else None
+            else choose_random_music(MUSIC_DIR)
         )
+
+        print(f"Selected background music: {music_path}")
 
         slides = find_slides(input_dir)
 
@@ -86,8 +91,10 @@ class ReelPublisher:
         music_path = (
             Path(music_path_string).expanduser().resolve()
             if music_path_string
-            else None
+            else choose_random_music(MUSIC_DIR)
         )
+
+        print(f"Selected background music: {music_path}")
 
         job_id = input_dir.name
 
