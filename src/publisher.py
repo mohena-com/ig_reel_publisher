@@ -25,10 +25,20 @@ class ReelPublisher:
         reel_path = reel_dir / "reel.mp4"
         return reel_dir, reel_path
 
-    def create(self, input_dir_string: str):
+    def create(
+        self,
+        input_dir_string: str,
+        music_path_string: str | None = None,
+    ):
         input_dir = Path(
             input_dir_string
         ).expanduser().resolve()
+
+        music_path = (
+            Path(music_path_string).expanduser().resolve()
+            if music_path_string
+            else None
+        )
 
         slides = find_slides(input_dir)
 
@@ -45,6 +55,7 @@ class ReelPublisher:
         create_reel(
             slides,
             reel_path,
+            music_path,
         )
 
         return {
@@ -57,18 +68,26 @@ class ReelPublisher:
             "duration_seconds": 24,
             "resolution": "1080x1920",
             "fps": 30,
+            "music": str(music_path) if music_path else None,
         }
 
     def publish(
         self,
         input_dir_string: str,
         caption: str,
+        music_path_string: str | None = None,
     ):
         self.config.validate()
 
         input_dir = Path(
             input_dir_string
         ).expanduser().resolve()
+
+        music_path = (
+            Path(music_path_string).expanduser().resolve()
+            if music_path_string
+            else None
+        )
 
         job_id = input_dir.name
 
@@ -97,6 +116,7 @@ class ReelPublisher:
             create_reel(
                 slides,
                 reel_path,
+                music_path,
             )
         else:
             print(

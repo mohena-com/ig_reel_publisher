@@ -10,6 +10,7 @@ WIDTH = 1080
 HEIGHT = 1920
 FPS = 30
 SECONDS_PER_SLIDE = 4
+TOTAL_DURATION = SECONDS_PER_SLIDE * 6
 
 
 def natural_key(path: Path):
@@ -46,7 +47,11 @@ def find_slides(input_dir: Path) -> list[Path]:
     return slides
 
 
-def create_reel(slides: list[Path], output_path: Path) -> Path:
+def create_reel(
+    slides: list[Path],
+    output_path: Path,
+    music_path: Path | None = None,
+) -> Path:
     ffmpeg = shutil.which("ffmpeg")
 
     if not ffmpeg:
@@ -60,6 +65,11 @@ def create_reel(slides: list[Path], output_path: Path) -> Path:
             f"Expected 6 slides, received {len(slides)}."
         )
 
+    if music_path is not None and not music_path.is_file():
+        raise RuntimeError(
+            f"Music file does not exist: {music_path}"
+        )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     command = [ffmpeg, "-y"]
@@ -70,6 +80,14 @@ def create_reel(slides: list[Path], output_path: Path) -> Path:
                 "-loop", "1",
                 "-t", str(SECONDS_PER_SLIDE),
                 "-i", str(slide),
+            ]
+        )
+
+    if music_path is not None:
+        command.extend(
+            [
+                "-stream_loop", "-1",
+                "-i", str(music_path),
             ]
         )
 
@@ -115,12 +133,22 @@ def create_reel(slides: list[Path], output_path: Path) -> Path:
         f"[outv]"
     )
 
+    if music_path is not None:
+        filters.append(
+            f"[6:a]"
+            f"atrim=duration={TOTAL_DURATION},"
+            f"asetpts=N/SR/TB,"
+            f"afade=t=out:st={TOTAL_DURATION - 1}:d=1"
+            f"[outa]"
+        )
+
     command.extend(
         [
             "-filter_complex",
             ";".join(filters),
             "-map",
             "[outv]",
+            *(["-map", "[outa]"] if music_path is not None else []),
             "-c:v",
             "libx264",
             "-preset",
@@ -131,12 +159,21 @@ def create_reel(slides: list[Path], output_path: Path) -> Path:
             "yuv420p",
             "-movflags",
             "+faststart",
-            "-an",
+            *(
+                [
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+                ]
+                if music_path is not None
+                else ["-an"]
+            ),
             str(output_path),
         ]
     )
 
     print("Creating 24-second Reel...")
+    if music_path is not None:
+        print(f"  Music   → {music_path}")
     print(f"  Slide 1 → 4 seconds")
     print(f"  Slide 2 → 4 seconds")
     print(f"  Slide 3 → 4 seconds")

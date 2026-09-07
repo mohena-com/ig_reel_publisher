@@ -21,6 +21,10 @@ def main():
         help="Create the 24-second Reel MP4 only; do not publish.",
     )
     create.add_argument("--input-dir", required=True)
+    create.add_argument(
+        "--music",
+        help="Optional licensed music file (MP3, WAV, M4A, etc.).",
+    )
 
     publish = sub.add_parser(
         "publish",
@@ -28,6 +32,10 @@ def main():
     )
     publish.add_argument("--input-dir", required=True)
     publish.add_argument("--caption", required=True)
+    publish.add_argument(
+        "--music",
+        help="Optional licensed music file (MP3, WAV, M4A, etc.).",
+    )
     publish.add_argument(
         "--publish",
         action="store_true",
@@ -44,7 +52,10 @@ def main():
 
     try:
         if args.command == "create":
-            result = publisher.create(args.input_dir)
+            result = publisher.create(
+                args.input_dir,
+                args.music,
+            )
 
         elif args.command == "publish":
             if not args.publish:
@@ -54,6 +65,7 @@ def main():
             result = publisher.publish(
                 args.input_dir,
                 args.caption,
+                args.music,
             )
 
         else:
