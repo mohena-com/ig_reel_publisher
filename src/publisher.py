@@ -203,6 +203,7 @@ class ReelPublisher:
         )
 
         text_path = reel_path.parent / "reel_details.txt"
+        text_path.parent.mkdir(parents=True, exist_ok=True)
         text_path.write_text(
             "\n".join(lines) + "\n",
             encoding="utf-8",
