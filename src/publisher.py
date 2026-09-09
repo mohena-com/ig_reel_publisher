@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -27,6 +29,186 @@ class ReelPublisher:
         reel_dir = input_dir / "reel"
         reel_path = reel_dir / "reel.mp4"
         return reel_dir, reel_path
+
+    def _load_json_file(self, file_path: Path):
+        if not file_path.exists():
+            return {}
+
+        try:
+            return json.loads(
+                file_path.read_text(encoding="utf-8")
+            )
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"Failed to parse JSON file: {file_path}"
+            ) from exc
+
+    def _lookup_card_value(
+        self,
+        slides: list[dict],
+        label_contains: str,
+    ):
+        normalized_label = label_contains.lower()
+
+        for slide in slides:
+            for card in slide.get("cards", []):
+                label = str(card.get("label", "")).lower()
+                if normalized_label in label:
+                    value = card.get("value")
+                    if value:
+                        return str(value)
+
+            for bullet in slide.get("bullets", []):
+                if normalized_label in str(bullet).lower():
+                    return str(bullet)
+
+        return None
+
+    def _collect_urls(self, facts: dict):
+        urls = []
+
+        if facts.get("source_url"):
+            urls.append(str(facts["source_url"]))
+
+        for item in facts.get("links", []) or []:
+            if isinstance(item, dict):
+                url = (
+                    item.get("url")
+                    or item.get("href")
+                    or item.get("link")
+                )
+                if url:
+                    urls.append(str(url))
+            else:
+                urls.append(str(item))
+
+        unique_urls = []
+        seen = set()
+
+        for url in urls:
+            if url not in seen:
+                seen.add(url)
+                unique_urls.append(url)
+
+        return unique_urls
+
+    def _to_hashtag(self, value: str):
+        cleaned = re.sub(r"[^A-Za-z0-9]+", "", value)
+        if not cleaned:
+            return None
+
+        return f"#{cleaned}"
+
+    def _build_hashtags(
+        self,
+        topic: str,
+        organisation: str,
+    ):
+        hashtags = []
+        seen = set()
+
+        def add(tag: str | None):
+            if tag and tag not in seen:
+                hashtags.append(tag)
+                seen.add(tag)
+
+        if organisation:
+            add(self._to_hashtag(organisation))
+            if "SBI" in organisation.upper():
+                add("#SBI")
+            if "Bank" in organisation:
+                add("#BankJobs")
+
+        if topic:
+            if "Recruitment" in topic:
+                add("#Recruitment")
+
+        for tag in [
+            "#GovernmentJobs",
+            "#JobAlert",
+            "#CareerOpportunity",
+        ]:
+            add(tag)
+
+        if len(hashtags) < 6:
+            add("#Jobs")
+            add("#Vacancy")
+
+        return hashtags[:8]
+
+    def _build_reel_details_text(
+        self,
+        input_dir: Path,
+        reel_path: Path,
+    ):
+        carousel = self._load_json_file(
+            input_dir / "carousel.json"
+        )
+        facts = self._load_json_file(
+            input_dir / "facts.json"
+        )
+
+        topic = (
+            carousel.get("topic")
+            or facts.get("recruitment_name")
+            or input_dir.name
+        )
+        organisation = (
+            carousel.get("organisation")
+            or facts.get("organisation")
+            or "Unknown organisation"
+        )
+
+        vacancies = facts.get("total_vacancies")
+        if vacancies is None:
+            vacancies = self._lookup_card_value(
+                carousel.get("slides", []),
+                "Vacancies",
+            )
+
+        deadline = facts.get("application_end")
+        if deadline is None:
+            deadline = self._lookup_card_value(
+                carousel.get("slides", []),
+                "deadline",
+            )
+
+        relevant_urls = self._collect_urls(facts)
+
+        hashtags = self._build_hashtags(
+            topic,
+            organisation,
+        )
+
+        lines = [
+            f"Job title: {topic}",
+            f"Organisation: {organisation}",
+            f"Vacancies: {vacancies if vacancies is not None else 'Not provided'}",
+            f"Application deadline: {deadline if deadline is not None else 'Not provided'}",
+            "",
+            "Relevant URLs:",
+        ]
+
+        if relevant_urls:
+            lines.extend(f"- {url}" for url in relevant_urls)
+        else:
+            lines.append("- No URLs were found in carousel.json or facts.json.")
+
+        lines.extend(
+            [
+                "",
+                "Relevant hashtags:",
+                ", ".join(hashtags),
+            ]
+        )
+
+        text_path = reel_path.parent / "reel_details.txt"
+        text_path.write_text(
+            "\n".join(lines) + "\n",
+            encoding="utf-8",
+        )
+
+        return text_path
 
     def create(
         self,
@@ -63,12 +245,18 @@ class ReelPublisher:
             music_path,
         )
 
+        details_path = self._build_reel_details_text(
+            input_dir,
+            reel_path,
+        )
+
         return {
             "input_dir": str(input_dir),
             "slides": [
                 str(p) for p in slides
             ],
             "reel": str(reel_path),
+            "reel_details_file": str(details_path),
             "seconds_per_slide": 4,
             "duration_seconds": 24,
             "resolution": "1080x1920",
@@ -130,6 +318,11 @@ class ReelPublisher:
                 f"Using existing Reel video: "
                 f"{reel_path}"
             )
+
+        details_path = self._build_reel_details_text(
+            input_dir,
+            reel_path,
+        )
 
         print("Discovering Instagram account...")
         account = self.meta.choose_account(
@@ -230,6 +423,7 @@ class ReelPublisher:
             "reel_container_id": container_id,
             "reel_media_id": media_id,
             "reel_video": str(reel_path),
+            "reel_details_file": str(details_path),
             "cloudinary_url": video_url,
             "caption": caption,
             "status": status,

@@ -69,7 +69,7 @@ This is the recommended first test:
 
 ```bash
 ./run.sh create \
-  --input-dir "../output_carousel/25_Indian_Overseas_Bank_IOB_Security_Guard_Recruitment_2026_Apply_Online_2026-08-29"
+  --input-dir "../output_carousel/18_UCO_Bank_Specialist_Officer_SO_Recruitment_2026_Apply_Online_for_20_Post_2026-09-07"
 ```
 
 When `--music` is omitted, the application randomly selects an `.mp3` file
@@ -91,9 +91,9 @@ After inspecting the MP4:
 
 ```bash
 ./run.sh publish \
-  --input-dir "../output_carousel/25_Indian_Overseas_Bank_IOB_Security_Guard_Recruitment_2026_Apply_Online_2026-08-29" \
+  --input-dir "../output_carousel/21_RCFL_Technician_and_Trade_Apprentice_2026_Apply_Online_for_326_Post_2026-09-07" \
   --caption "Latest government job notification. Check the slides for eligibility, dates, fees and application details." \
-  --music "data/music/your-licensed-track.mp3" \
+  --music "data/music/Badly-chosic.com_.mp3" \
   --publish
 ```
 
