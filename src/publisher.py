@@ -192,7 +192,7 @@ class ReelPublisher:
         if relevant_urls:
             lines.extend(f"- {url}" for url in relevant_urls)
         else:
-            lines.append("- No URLs were found in carousel.json or facts.json.")
+            lines = lines[:-1]
 
         lines.extend(
             [
