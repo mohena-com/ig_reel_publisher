@@ -85,6 +85,17 @@ The output will be:
 ../output_carousel/25_Indian_Overseas_Bank_IOB_Security_Guard_Recruitment_2026_Apply_Online_2026-08-29/reel/reel.mp4
 ```
 
+When the job folder contains `carousel.json` and/or `facts.json`, the create
+step also generates a text file next to the MP4:
+
+```text
+../output_carousel/31_State_Bank_of_India_SBI_Specialist_Cadre_Officer_SCO_Recruitment_2026_Apply_Online_for_207_2026-09-07/reel/reel_details.txt
+```
+
+That text file contains the job title, organisation, vacancies, application
+deadline, and relevant hashtags, and it can be copied into an Instagram post
+caption or reused as a text source for the Reel post.
+
 ## 4. Publish Reel
 
 After inspecting the MP4:
@@ -112,7 +123,22 @@ The `--publish` flag is required for an actual Instagram publication.
 
 Without `--publish`, `publish` is rejected; use `create` when you only want the MP4.
 
-## 5. Status
+## 5. Batch create reels for all jobs
+
+To process every job folder in `../output_carousel` automatically, run:
+
+```bash
+./generate_all_reels.sh
+```
+
+This script will:
+
+1. Find every job folder under `../output_carousel`
+2. Skip folders that do not contain six slide images
+3. Run `./run.sh create --input-dir ...` for each valid job
+4. Generate the corresponding `reel_details.txt` file for each reel
+
+## 6. Status
 
 ```bash
 ./run.sh status --job-id 25_Indian_Overseas_Bank_IOB_Security_Guard_Recruitment_2026_Apply_Online_2026-08-29
